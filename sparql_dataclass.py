@@ -1,6 +1,6 @@
+from __future__ import annotations
 import rdflib
 from typing import Dict, List, Generic, TypeVar, Type
-from __future__ import annotations
 
 rdflib.plugin.register(
     'rdf+xml', rdflib.plugin.Serializer,
@@ -10,19 +10,24 @@ rdflib.plugin.register(
     'rdflib.plugins.parsers.rdfxml', 'RDFXMLParser')
 
 class SPARQLAccess:
+    __graph: rdflib.Graph
+
     def __init__(self):
-        pass
+        self.__graph = rdflib.Graph()
 
     def load(self, uri):
-        pass
+        self.__graph.parse(uri)
+
+    def __dict_from_row(query_result):
+        return {k:query_result[v].__str__() for (k,v) in query_result.labels.items()}
 
     def query_raw(self, sparql: str) -> List[Dict[str,object]]:
-        pass
+        results = self.__graph.query(sparql)
+        return [SPARQLAccess.__dict_from_row(r) for r in results]
 
     T = TypeVar('T')
     def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
         pass
-
 
 TResult = TypeVar('TQueryResult')
 class ResultContainer(Generic[TResult]):
