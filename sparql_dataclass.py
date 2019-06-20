@@ -27,7 +27,15 @@ class SPARQLAccess:
 
     T = TypeVar('T')
     def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
-        pass
+        import dataclasses
+
+        assert dataclasses.is_dataclass(dataclass_type), 'Provided type should be dataclass.'
+
+        from marshmallow_dataclass import dataclass as marshable_dataclass
+        marshable_dataclass_type = marshable_dataclass(dataclass_type)
+
+        deserialized = [marshable_dataclass_type.Schema().load(r, partial=True) for r in self.query_raw(sparql)]
+        return [r for (r, _) in deserialized]
 
 TResult = TypeVar('TQueryResult')
 class ResultContainer(Generic[TResult]):
