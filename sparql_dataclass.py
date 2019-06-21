@@ -1,6 +1,7 @@
 from __future__ import annotations
 import rdflib
 from typing import Dict, List, Generic, TypeVar, Type
+from abc import ABCMeta, abstractmethod
 
 rdflib.plugin.register(
     'rdf+xml', rdflib.plugin.Serializer,
@@ -37,13 +38,43 @@ class SPARQLAccess:
         deserialized = [marshable_dataclass_type.Schema().load(r, partial=True) for r in self.query_raw(sparql)]
         return [r for (r, _) in deserialized]
 
-TResult = TypeVar('TQueryResult')
-class ResultContainer(Generic[TResult]):
-    __results: List[TResult]
+TResult = TypeVar('TResult')
+class ResultContainer(Generic[TResult], metaclass=ABCMeta):
+    def __init__(self):
+        if not isinstance(self,_ResultContainerImplementation):
+            raise TypeError('Cannot inherit from ResultContainer.')
 
     @property
+    @abstractmethod
     def results(self) -> List[TResult]:
         pass
+
+class _ResultContainerImplementation(ResultContainer[TResult]):
+    __results: List[TResult]
+
+    __result_type: Type[TResult]
+    __is_set = False
+
+    def __init__(self, result_type: Type[TResult]):
+        self.__result_type = result_type
+
+    def set(self, results: List[TResult]):
+        assert all(isinstance(x, self.__result_type) for x in results), f'All elements should be of the result type {self.__result_type} for which the result container was created.'
+        self.__results = results
+
+        self.__is_set = True
+
+    @property
+    def results(self):
+        assert self.__is_set, 'Results have not yet been set.'
+
+        return self.__results
+
+def result_container(result_type: Type[TResult]) -> ResultContainer[TResult]:
+    import dataclasses
+    assert dataclasses.is_dataclass(result_type), 'Provided result type should be dataclass. Cannot create result container for non-dataclass type.'
+
+    return _ResultContainerImplementation(result_type)
 
 class QueryAndTraversalContext:
     def traverse(self, sparql: str, navigation_attributes: List[str]) -> QueryAndTraversalContext:
