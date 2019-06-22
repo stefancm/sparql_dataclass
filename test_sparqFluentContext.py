@@ -39,10 +39,10 @@ class TestSparqlFluentContext(TestCase):
     def test_query_when_dataclasstype_not_dataclass_assertion_error(self):
         pass
 
-    def test_query_final(self):
+    def test_query(self):
         pass
 
-    def test_query(self):
+    def test_query_and_continue(self):
         pass
 
     def test_when_non_result_container_provided_then_assertion_error(self):

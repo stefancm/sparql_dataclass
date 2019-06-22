@@ -76,30 +76,30 @@ def result_container(result_type: Type[TResult]) -> ResultContainer[TResult]:
 
     return _ResultContainerImplementation(result_type)
 
-class QueryAndTraversalContext:
-    def traverse(self, sparql: str, navigation_attributes: List[str]) -> QueryAndTraversalContext:
+class TraversalContext:
+    def traverse(self, sparql: str, navigation_attributes: List[str]) -> TraversalContext:
         pass
 
     T = TypeVar('T')
-    def query(self, dataclass_type: Type[T], sparql: str, result_container: ResultContainer[T]) -> QueryAndTraversalContext:
+    def query_and_continue(self, dataclass_type: Type[T], sparql: str, result_container: ResultContainer[T]) -> TraversalContext:
         pass
 
-    def query_final(self, dataclass_type: Type[T], sparql: str) -> List[T]:
+    def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
         pass
 
-class __QueryAndTraversalContext(QueryAndTraversalContext):
+class __TraversalContext(TraversalContext):
     def __init__(self, initial_uri: str):
         pass
 
-    def traverse(self, sparql: str, navigation_attributes: List[str]) -> QueryAndTraversalContext:
+    def traverse(self, sparql: str, navigation_attributes: List[str]) -> TraversalContext:
         pass
 
     T = TypeVar('T')
-    def query(self, dataclass_type: Type[T], sparql: str, result_container: ResultContainer[T]) -> QueryAndTraversalContext:
+    def query_and_continue(self, dataclass_type: Type[T], sparql: str, result_container: ResultContainer[T]) -> TraversalContext:
         pass
 
-    def query_final(self, dataclass_type: Type[T], sparql: str) -> List[T]:
+    def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
         pass
 
-def start_at_url(url: str) -> QueryAndTraversalContext:
-    context = __QueryAndTraversalContext(initial_uri=url)
+def start_traversal(url: str) -> TraversalContext:
+    context = __TraversalContext(initial_uri=url)
