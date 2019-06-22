@@ -27,16 +27,18 @@ class SPARQLAccess:
         return [SPARQLAccess.__dict_from_row(r) for r in results]
 
     T = TypeVar('T')
-    def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
-        import dataclasses
+    def query(self, sparql: str, dataclass_type: Type[T] = dict) -> List[T]:
+        dictionary_result = self.query_raw(sparql)
 
-        assert dataclasses.is_dataclass(dataclass_type), 'Provided type should be dataclass.'
+        if dataclass_type is dict:
+            return dictionary_result
+        else:
+            import dataclasses
+            from marshmallow_dataclass import dataclass as marshable_dataclass, add_schema
+            marshable_dataclass_type = add_schema(dataclass_type) if dataclasses.is_dataclass(dataclass_type) else marshable_dataclass(dataclass_type)
 
-        from marshmallow_dataclass import dataclass as marshable_dataclass
-        marshable_dataclass_type = marshable_dataclass(dataclass_type)
-
-        deserialized = [marshable_dataclass_type.Schema().load(r, partial=True) for r in self.query_raw(sparql)]
-        return [r for (r, _) in deserialized]
+            deserialized = [marshable_dataclass_type.Schema().load(r, partial=True) for r in dictionary_result]
+            return [r for (r, _) in deserialized]
 
 TResult = TypeVar('TResult')
 class ResultContainer(Generic[TResult], metaclass=ABCMeta):
@@ -81,7 +83,7 @@ class TraversalContext:
         pass
 
     T = TypeVar('T')
-    def query_and_continue(self, dataclass_type: Type[T], sparql: str, result_container: ResultContainer[T]) -> TraversalContext:
+    def query_and_continue(self, sparql: str, result_container: ResultContainer[T], dataclass_type: Type[T]) -> TraversalContext:
         pass
 
     def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
@@ -95,7 +97,7 @@ class __TraversalContext(TraversalContext):
         pass
 
     T = TypeVar('T')
-    def query_and_continue(self, dataclass_type: Type[T], sparql: str, result_container: ResultContainer[T]) -> TraversalContext:
+    def query_and_continue(self, sparql: str, result_container: ResultContainer[T], dataclass_type: Type[T]) -> TraversalContext:
         pass
 
     def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
