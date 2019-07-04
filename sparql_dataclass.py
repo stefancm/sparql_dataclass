@@ -72,10 +72,7 @@ class _ResultContainerImplementation(ResultContainer[TResult]):
 
         return self.__results
 
-def result_container(result_type: Type[TResult]) -> ResultContainer[TResult]:
-    import dataclasses
-    assert dataclasses.is_dataclass(result_type), 'Provided result type should be dataclass. Cannot create result container for non-dataclass type.'
-
+def result_container(result_type: Type[TResult] = dict) -> ResultContainer[TResult]:
     return _ResultContainerImplementation(result_type)
 
 class TraversalContext:
@@ -86,22 +83,41 @@ class TraversalContext:
     def query_and_continue(self, sparql: str, result_container: ResultContainer[T], dataclass_type: Type[T]) -> TraversalContext:
         pass
 
-    def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
+    def query(self, sparql: str, dataclass_type: Type[T]) -> List[T]:
         pass
 
 class __TraversalContext(TraversalContext):
+    __access: SPARQLAccess
+
     def __init__(self, initial_uri: str):
-        pass
+        self.__access = SPARQLAccess()
+        self.__access.load(initial_uri)
 
     def traverse(self, sparql: str, navigation_attributes: List[str]) -> TraversalContext:
-        pass
+        traversal_results = self.__access.query_raw(sparql)
+        for result in traversal_results:
+            for navigation_attribute in navigation_attributes:
+                self.__access.load(result[navigation_attribute])
+        return self
 
     T = TypeVar('T')
-    def query_and_continue(self, sparql: str, result_container: ResultContainer[T], dataclass_type: Type[T]) -> TraversalContext:
-        pass
+    def query_and_continue(self, sparql: str, result_container: ResultContainer[T], dataclass_type: Type[T] = dict) -> TraversalContext:
+        assert result_container is not None, "Should provide a result container."
+        if not isinstance(result_container, _ResultContainerImplementation):
+            raise TypeError("Result container should be created with result_container function.")
 
-    def query(self, dataclass_type: Type[T], sparql: str) -> List[T]:
-        pass
+        if dataclass_type is dict:
+            result_container.set(self.__access.query_raw(sparql))
+        else:
+            result_container.set(self.__access.query(sparql, dataclass_type))
+        return self
+
+    def query(self, sparql: str, dataclass_type: Type[T] = dict) -> List[T]:
+        if dataclass_type is dict:
+            return self.__access.query_raw(sparql)
+        else:
+            return self.__access.query(sparql, dataclass_type)
 
 def start_traversal(url: str) -> TraversalContext:
     context = __TraversalContext(initial_uri=url)
+    return context
